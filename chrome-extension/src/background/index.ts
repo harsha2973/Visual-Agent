@@ -3,6 +3,7 @@ import { WSEventPacket } from '@visual-agent/shared';
 import { EventManager } from '../telemetry/EventManager.js';
 import { AuthManager } from '../telemetry/AuthManager.js';
 import { BatchUploader } from '../telemetry/BatchUploader.js';
+import { TabCaptureManager } from '../telemetry/TabCaptureManager.js';
 
 let ws: WebSocket | null = null;
 let currentSessionId: string | null = null;
@@ -24,6 +25,13 @@ export const batchUploader = new BatchUploader({
   baseDelayMs: 1000,
   authManager,
   eventManager,
+});
+
+// Instantiate TabCaptureManager configured for 3-second capture intervals
+export const tabCaptureManager = new TabCaptureManager({
+  intervalMs: 3000, // Default 3 seconds
+  compressionQuality: 0.65,
+  thumbnailWidth: 200,
 });
 
 // Initialize background activity listeners (Tabs, Windows, Idle, Navigation, Downloads)
@@ -95,6 +103,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .then(() => sendResponse({ success: true }))
       .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
+  } else if (message.type === 'SET_TAB_CAPTURE_PERMISSION') {
+    tabCaptureManager.setUserPermission(message.granted);
+    if (message.granted && message.startCapturing) {
+      tabCaptureManager.startCapture();
+    } else if (!message.granted) {
+      tabCaptureManager.stopCapture();
+    }
+    sendResponse({
+      success: true,
+      hasPermission: tabCaptureManager.getUserPermission(),
+      isCapturing: tabCaptureManager.getIsCapturing(),
+    });
+  } else if (message.type === 'TOGGLE_TAB_CAPTURE') {
+    if (message.enable) {
+      const started = tabCaptureManager.startCapture();
+      sendResponse({ success: started, isCapturing: tabCaptureManager.getIsCapturing() });
+    } else {
+      tabCaptureManager.stopCapture();
+      sendResponse({ success: true, isCapturing: false });
+    }
+  } else if (message.type === 'SET_CAPTURE_INTERVAL') {
+    tabCaptureManager.setIntervalMs(message.intervalMs);
+    sendResponse({ success: true, intervalMs: tabCaptureManager.getIntervalMs() });
+  } else if (message.type === 'GET_LATEST_CAPTURED_FRAME') {
+    sendResponse({
+      latestFrame: tabCaptureManager.getLatestFrame(),
+      isCapturing: tabCaptureManager.getIsCapturing(),
+      hasPermission: tabCaptureManager.getUserPermission(),
+      intervalMs: tabCaptureManager.getIntervalMs(),
+    });
   } else if (message.type === 'TELEMETRY_PAYLOAD') {
     if (ws && ws.readyState === WebSocket.OPEN && currentSessionId) {
       ws.send(

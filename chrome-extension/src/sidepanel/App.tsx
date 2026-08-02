@@ -1,6 +1,6 @@
 /// <reference types="chrome"/>
 import React from 'react';
-import { Bot, Play, RefreshCw, LogOut } from 'lucide-react';
+import { Bot, Play, RefreshCw, LogOut, Camera, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [goal, setGoal] = React.useState('');
@@ -16,6 +16,32 @@ export const App: React.FC = () => {
   const [fullName, setFullName] = React.useState('');
   const [authError, setAuthError] = React.useState('');
   const [isSyncing, setIsSyncing] = React.useState(false);
+
+  // Tab Capture state
+  const [hasCapturePermission, setHasCapturePermission] = React.useState(false);
+  const [isCapturing, setIsCapturing] = React.useState(false);
+  const [captureInterval, setCaptureInterval] = React.useState(3); // 3 seconds default
+  const [latestThumbnail, setLatestThumbnail] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Poll tab capture status
+    const interval = setInterval(() => {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'GET_LATEST_CAPTURED_FRAME' }, (res) => {
+          if (res) {
+            setHasCapturePermission(res.hasPermission || false);
+            setIsCapturing(res.isCapturing || false);
+            setCaptureInterval(res.intervalMs ? Math.round(res.intervalMs / 1000) : 3);
+            if (res.latestFrame?.thumbnailDataUrl) {
+              setLatestThumbnail(res.latestFrame.thumbnailDataUrl);
+            }
+          }
+        });
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleStartTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +102,43 @@ export const App: React.FC = () => {
       });
     } else {
       setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
+
+  const handleTogglePermission = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const granted = e.target.checked;
+    setHasCapturePermission(granted);
+
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: 'SET_TAB_CAPTURE_PERMISSION',
+        granted,
+        startCapturing: granted,
+      });
+    }
+  };
+
+  const handleToggleCapture = () => {
+    const nextState = !isCapturing;
+    setIsCapturing(nextState);
+
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: 'TOGGLE_TAB_CAPTURE',
+        enable: nextState,
+      });
+    }
+  };
+
+  const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    setCaptureInterval(val);
+
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: 'SET_CAPTURE_INTERVAL',
+        intervalMs: val * 1000,
+      });
     }
   };
 
@@ -167,26 +230,22 @@ export const App: React.FC = () => {
                   required
                 />
               )}
-              <div style={{ position: 'relative' }}>
-                <input
-                  className="chat-input"
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div style={{ position: 'relative' }}>
-                <input
-                  className="chat-input"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
+              <input
+                className="chat-input"
+                type="email"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <input
+                className="chat-input"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
               <button className="btn-primary" type="submit">
                 {authMode === 'LOGIN' ? 'Authenticate' : 'Create Account'}
               </button>
@@ -227,9 +286,121 @@ export const App: React.FC = () => {
               </button>
             </div>
 
+            {/* Tab Capture Control Card */}
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                marginTop: '8px',
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Camera size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '12px', fontWeight: 600 }}>Active Tab Capture</span>
+                </div>
+                {hasCapturePermission ? (
+                  <span title="Permission granted">
+                    <ShieldCheck size={16} color="#10b981" />
+                  </span>
+                ) : (
+                  <span title="Permission required">
+                    <ShieldAlert size={16} color="#ef4444" />
+                  </span>
+                )}
+              </div>
+
+              <label
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--text-sub)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={hasCapturePermission}
+                  onChange={handleTogglePermission}
+                />
+                <span>Grant permission to capture active tab</span>
+              </label>
+
+              {hasCapturePermission && (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '11px',
+                    }}
+                  >
+                    <span>
+                      Capture Interval: <strong>{captureInterval}s</strong>
+                    </span>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={captureInterval}
+                      onChange={handleIntervalChange}
+                      style={{ width: '100px' }}
+                    />
+                  </div>
+
+                  <button
+                    className="btn-primary"
+                    onClick={handleToggleCapture}
+                    style={{
+                      background: isCapturing ? '#ef4444' : 'var(--accent)',
+                      fontSize: '11px',
+                      padding: '6px',
+                    }}
+                  >
+                    {isCapturing ? 'Stop Recording' : 'Start Tab Capture (Every 3s)'}
+                  </button>
+                </>
+              )}
+
+              {latestThumbnail && (
+                <div style={{ marginTop: '4px', textAlign: 'center' }}>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      color: 'var(--text-sub)',
+                      display: 'block',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    Latest Captured Frame
+                  </span>
+                  <img
+                    src={latestThumbnail}
+                    alt="Active Tab Thumbnail"
+                    style={{
+                      width: '100%',
+                      maxHeight: '100px',
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border)',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
             <form
               onSubmit={handleStartTask}
-              style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}
             >
               <label style={{ fontSize: '12px', color: 'var(--text-sub)' }}>Goal Prompt</label>
               <input
@@ -259,7 +430,7 @@ export const App: React.FC = () => {
 
         <div style={{ marginTop: '12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '6px' }}>
-            Agent & Activity Log (30s Sync Queue)
+            Agent & Activity Log
           </span>
           <div
             style={{

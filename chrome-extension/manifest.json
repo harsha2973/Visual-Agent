@@ -12,7 +12,8 @@
     "tabs",
     "idle",
     "downloads",
-    "webNavigation"
+    "webNavigation",
+    "tabCapture"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
