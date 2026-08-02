@@ -1,22 +1,45 @@
 import React from 'react';
-import { Sun, Moon, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Sun, Moon, RefreshCw, ShieldCheck, Users, Radio } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 
 interface HeaderProps {
   title: string;
+  isLiveConnected?: boolean;
+  onlineUsersCount?: number;
   onRefresh?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, onRefresh }) => {
+export const Header: React.FC<HeaderProps> = ({
+  title,
+  isLiveConnected = true,
+  onlineUsersCount = 1,
+  onRefresh,
+}) => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
 
   return (
     <header className="h-16 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-20">
       <div className="flex items-center gap-3">
         <h2 className="text-xl font-bold text-white capitalize">{title}</h2>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Live Sync</span>
+
+        {/* Realtime WebSocket Badge */}
+        {isLiveConnected ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <Radio size={12} />
+            <span>WebSocket Live</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <span>Reconnecting...</span>
+          </div>
+        )}
+
+        {/* Online Users Indicator */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium">
+          <Users size={12} />
+          <span>{onlineUsersCount} Online</span>
         </div>
       </div>
 

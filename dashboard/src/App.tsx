@@ -4,6 +4,7 @@ import { Sidebar, PageId } from './components/Sidebar';
 import { Header } from './components/Header';
 import { useAuthStore } from './store/useAuthStore';
 import { useThemeStore } from './store/useThemeStore';
+import { useWebSocket } from './hooks/useWebSocket';
 
 import { LoginPage } from './pages/LoginPage';
 import { OverviewPage } from './pages/OverviewPage';
@@ -28,6 +29,7 @@ export const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { isDarkMode } = useThemeStore();
   const [currentPage, setCurrentPage] = useState<PageId>('overview');
+  const { isLiveConnected, onlineUsersCount } = useWebSocket();
 
   if (!isAuthenticated) {
     return <LoginPage />;
@@ -62,7 +64,11 @@ export const AppContent: React.FC = () => {
     >
       <Sidebar currentPage={currentPage} onSelectPage={setCurrentPage} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header title={currentPage.replace('-', ' ')} />
+        <Header
+          title={currentPage.replace('-', ' ')}
+          isLiveConnected={isLiveConnected}
+          onlineUsersCount={onlineUsersCount}
+        />
         <main className="p-6 flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
     </div>
