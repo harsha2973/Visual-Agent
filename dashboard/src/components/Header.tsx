@@ -1,5 +1,15 @@
-import React from 'react';
-import { Sun, Moon, RefreshCw, ShieldCheck, Users, Radio, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Sun,
+  Moon,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+  Radio,
+  Search,
+  Download,
+  FileText,
+} from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 
 interface HeaderProps {
@@ -18,6 +28,15 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
 }) => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPDF = (period: 'daily' | 'weekly' | 'monthly') => {
+    setDownloading(true);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+    const reportUrl = `${backendUrl}/api/v1/reports/pdf?period=${period}`;
+    window.open(reportUrl, '_blank');
+    setTimeout(() => setDownloading(false), 2000);
+  };
 
   return (
     <header className="h-16 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 px-6 flex items-center justify-between sticky top-0 z-20">
@@ -46,6 +65,40 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* PDF Download Dropdown */}
+        <div className="relative group">
+          <button
+            disabled={downloading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 text-xs font-semibold border border-indigo-500/30 transition-all"
+          >
+            <Download size={14} />
+            <span>{downloading ? 'Exporting PDF...' : 'Download Report'}</span>
+          </button>
+          <div className="absolute right-0 mt-1 w-44 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl p-1 hidden group-hover:block z-30">
+            <button
+              onClick={() => handleDownloadPDF('daily')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center gap-2"
+            >
+              <FileText size={14} className="text-emerald-400" />
+              <span>Daily PDF Report</span>
+            </button>
+            <button
+              onClick={() => handleDownloadPDF('weekly')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center gap-2"
+            >
+              <FileText size={14} className="text-indigo-400" />
+              <span>Weekly PDF Report</span>
+            </button>
+            <button
+              onClick={() => handleDownloadPDF('monthly')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg flex items-center gap-2"
+            >
+              <FileText size={14} className="text-purple-400" />
+              <span>Monthly PDF Report</span>
+            </button>
+          </div>
+        </div>
+
         {/* Global Search Button */}
         {onOpenSearch && (
           <button
