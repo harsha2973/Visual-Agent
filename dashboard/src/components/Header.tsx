@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, RefreshCw, ShieldCheck, Users, Radio } from 'lucide-react';
+import { Sun, Moon, RefreshCw, ShieldCheck, Users, Radio, Search } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   isLiveConnected?: boolean;
   onlineUsersCount?: number;
   onRefresh?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   isLiveConnected = true,
   onlineUsersCount = 1,
   onRefresh,
+  onOpenSearch,
 }) => {
   const { isDarkMode, toggleDarkMode } = useThemeStore();
 
@@ -44,6 +46,20 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Global Search Button */}
+        {onOpenSearch && (
+          <button
+            onClick={onOpenSearch}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-medium border border-gray-700 transition-all"
+          >
+            <Search size={14} className="text-indigo-400" />
+            <span>Search...</span>
+            <kbd className="px-1.5 py-0.5 text-[10px] bg-gray-900 border border-gray-700 rounded text-gray-400">
+              Ctrl+K
+            </kbd>
+          </button>
+        )}
+
         {onRefresh && (
           <button
             onClick={onRefresh}

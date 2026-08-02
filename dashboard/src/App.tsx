@@ -16,6 +16,8 @@ import { AIInsightsPage } from './pages/AIInsightsPage';
 import { WorkflowExplorerPage } from './pages/WorkflowExplorerPage';
 import { SettingsPage } from './pages/SettingsPage';
 
+import { SearchModal } from './components/SearchModal';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,7 +31,19 @@ export const AppContent: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
   const { isDarkMode } = useThemeStore();
   const [currentPage, setCurrentPage] = useState<PageId>('overview');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isLiveConnected, onlineUsersCount } = useWebSocket();
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (!isAuthenticated) {
     return <LoginPage />;
@@ -68,9 +82,12 @@ export const AppContent: React.FC = () => {
           title={currentPage.replace('-', ' ')}
           isLiveConnected={isLiveConnected}
           onlineUsersCount={onlineUsersCount}
+          onOpenSearch={() => setIsSearchOpen(true)}
         />
         <main className="p-6 flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
+
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   );
 };

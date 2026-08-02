@@ -6,7 +6,7 @@ import uvicorn
 from app.config import settings
 from app.core.database import engine, Base
 import app.infrastructure.models  # noqa: F401
-from app.api.v1 import auth, users, sessions, events, screenshots, workflows, websockets
+from app.api.v1 import auth, users, sessions, events, screenshots, workflows, websockets, search
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,6 +51,7 @@ app.include_router(sessions.router, prefix=settings.api_v1_prefix)
 app.include_router(events.router, prefix=settings.api_v1_prefix)
 app.include_router(screenshots.router, prefix=settings.api_v1_prefix)
 app.include_router(workflows.router, prefix=settings.api_v1_prefix)
+app.include_router(search.router, prefix=settings.api_v1_prefix)
 app.include_router(websockets.router)
 
 if __name__ == "__main__":
