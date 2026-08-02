@@ -1,0 +1,58 @@
+name: visual-agent-stack
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: visual_agent_redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: visual_agent_backend
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: '3000'
+      HOST: '0.0.0.0'
+      REDIS_URL: 'redis://redis:6379'
+      AI_WORKER_URL: 'http://ai-worker:8000'
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  ai-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ai-worker
+    container_name: visual_agent_ai_worker
+    ports:
+      - '8000:8000'
+    environment:
+      PORT: '8000'
+      HOST: '0.0.0.0'
+      REDIS_URL: 'redis://redis:6379'
+      GEMINI_API_KEY: '${GEMINI_API_KEY:-mock-key}'
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: visual_agent_dashboard
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
+
+volumes:
+  redis-data:

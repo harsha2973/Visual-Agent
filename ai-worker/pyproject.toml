@@ -1,0 +1,19 @@
+[project]
+name = "visual-agent-ai-worker"
+version = "1.0.0"
+description = "AI ReAct Planner & Vision Grounding Engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.9.0",
+    "playwright>=1.47.0",
+    "google-genai>=0.1.1",
+    "pillow>=10.4.0",
+    "redis>=5.0.8",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

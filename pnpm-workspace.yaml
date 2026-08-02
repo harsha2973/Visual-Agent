@@ -1,0 +1,7 @@
+packages:
+  - 'shared'
+  - 'backend'
+  - 'dashboard'
+  - 'chrome-extension'
+allowBuilds:
+  esbuild: true

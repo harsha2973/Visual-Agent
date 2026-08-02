@@ -1,0 +1,41 @@
+{
+  "name": "visual-agent-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Production-Ready Visual AI Browser Agent Monorepo",
+  "scripts": {
+    "build": "pnpm --filter shared build && pnpm --recursive --parallel build",
+    "dev": "pnpm --recursive --parallel dev",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "pnpm --recursive test",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.7.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

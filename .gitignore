@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.pyc
+.venv/
+venv/
+ENV/
+
+# Production Builds & Dist
+dist/
+build/
+.vite/
+*.crx
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# IDE & System
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.log
+
+# Docker & Logs
+docker-volumes/
+logs/
+
+# Coverage
+coverage/
+.cy/

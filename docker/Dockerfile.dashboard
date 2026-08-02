@@ -1,0 +1,21 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm@11.18.0
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.json .npmrc ./
+COPY shared ./shared
+COPY dashboard ./dashboard
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @visual-agent/shared build
+RUN pnpm --filter @visual-agent/dashboard build
+
+FROM nginx:alpine AS runner
+
+COPY --from=builder /app/dashboard/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
