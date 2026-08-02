@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Production-Ready Visual AI Browser Agent Monorepo",
   "scripts": {
-    "build": "pnpm --filter shared build && pnpm --recursive --parallel build",
+    "build": "pnpm --filter @visual-agent/shared build && pnpm --filter !@visual-agent/shared build",
     "dev": "pnpm --recursive --parallel dev",
     "lint": "eslint .",
     "format": "prettier --write .",
