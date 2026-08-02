@@ -1,26 +1,29 @@
 /// <reference types="chrome"/>
 import { WSEventPacket } from '@visual-agent/shared';
 import { EventManager } from '../telemetry/EventManager.js';
+import { AuthManager } from '../telemetry/AuthManager.js';
+import { BatchUploader } from '../telemetry/BatchUploader.js';
 
 let ws: WebSocket | null = null;
 let currentSessionId: string | null = null;
 
-// Instantiate EventManager with batch flushing callback
+// Instantiate AuthManager & EventManager
+export const authManager = new AuthManager({
+  baseUrl: 'http://localhost:3000/api/v1',
+});
+
 export const eventManager = new EventManager({
   batchSize: 10,
   flushIntervalMs: 5000,
-  onFlush: async (batch) => {
-    console.info(`[Background SW] Flushed ${batch.length} activity events to storage/backend`);
-    if (ws && ws.readyState === WebSocket.OPEN && currentSessionId) {
-      ws.send(
-        JSON.stringify({
-          event: 'TELEMETRY_UPDATE',
-          sessionId: currentSessionId,
-          payload: { activityEvents: batch },
-        }),
-      );
-    }
-  },
+});
+
+// Instantiate BatchUploader configured for 30-second uploads
+export const batchUploader = new BatchUploader({
+  uploadIntervalMs: 30000, // 30 seconds
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  authManager,
+  eventManager,
 });
 
 // Initialize background activity listeners (Tabs, Windows, Idle, Navigation, Downloads)
@@ -74,6 +77,24 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'START_AGENT_SESSION') {
     setupWebSocket(message.sessionId);
     sendResponse({ success: true });
+  } else if (message.type === 'AUTH_LOGIN') {
+    authManager
+      .login(message.email, message.password)
+      .then((tokenData) => sendResponse({ success: true, user: tokenData.user }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  } else if (message.type === 'AUTH_REGISTER') {
+    authManager
+      .register(message.email, message.password, message.fullName)
+      .then((user) => sendResponse({ success: true, user }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  } else if (message.type === 'MANUAL_SYNC') {
+    batchUploader
+      .triggerScheduledUpload()
+      .then(() => sendResponse({ success: true }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
   } else if (message.type === 'TELEMETRY_PAYLOAD') {
     if (ws && ws.readyState === WebSocket.OPEN && currentSessionId) {
       ws.send(
