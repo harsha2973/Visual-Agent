@@ -1,6 +1,8 @@
 import React from 'react';
 import { Brain, Sparkles, Layout, Tag } from 'lucide-react';
 
+import { CopilotWidget } from '../components/CopilotWidget';
+
 export const AIInsightsPage: React.FC = () => {
   const insights = [
     {
@@ -44,6 +46,9 @@ export const AIInsightsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* AI Copilot Widget */}
+      <CopilotWidget />
+
       <div>
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <Brain className="w-5 h-5 text-purple-400" />
