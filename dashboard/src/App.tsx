@@ -1,68 +1,80 @@
-import React from 'react';
-import { Header } from './components/Header.js';
-import { SessionList } from './components/SessionList.js';
-import { LiveTelemetry } from './components/LiveTelemetry.js';
-import { Session } from '@visual-agent/shared';
+import React, { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Sidebar, PageId } from './components/Sidebar';
+import { Header } from './components/Header';
+import { useAuthStore } from './store/useAuthStore';
+import { useThemeStore } from './store/useThemeStore';
 
-export const App: React.FC = () => {
-  const [sessions, setSessions] = React.useState<Session[]>([
-    {
-      id: 'session_demo_1',
-      goal: 'Find 3-bedroom apartment under $3000 in Miami',
-      status: 'RUNNING',
-      executionMode: 'IN_BROWSER',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+import { LoginPage } from './pages/LoginPage';
+import { OverviewPage } from './pages/OverviewPage';
+import { SessionsPage } from './pages/SessionsPage';
+import { ActivitiesPage } from './pages/ActivitiesPage';
+import { TimelinePage } from './pages/TimelinePage';
+import { ScreenshotsPage } from './pages/ScreenshotsPage';
+import { AIInsightsPage } from './pages/AIInsightsPage';
+import { WorkflowExplorerPage } from './pages/WorkflowExplorerPage';
+import { SettingsPage } from './pages/SettingsPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
-  ]);
-  const [activeSession, setActiveSession] = React.useState<Session | undefined>(sessions[0]);
-  const [telemetry] = React.useState<Array<{ timestamp: string; text: string }>>([
-    { timestamp: new Date().toLocaleTimeString(), text: 'Session session_demo_1 initialized.' },
-    { timestamp: new Date().toLocaleTimeString(), text: 'Content script DOM inspector active.' },
-    { timestamp: new Date().toLocaleTimeString(), text: 'Offscreen canvas PII redactor ready.' },
-  ]);
+  },
+});
 
-  const handleNewSession = async (goal: string) => {
-    try {
-      const res = await fetch('http://localhost:3000/api/v1/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, executionMode: 'IN_BROWSER' }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setSessions((prev) => [json.data, ...prev]);
-        setActiveSession(json.data);
-      }
-    } catch {
-      // Fallback local creation
-      const localSession: Session = {
-        id: `session_${Date.now()}`,
-        goal,
-        status: 'INITIALIZED',
-        executionMode: 'IN_BROWSER',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setSessions((prev) => [localSession, ...prev]);
-      setActiveSession(localSession);
+export const AppContent: React.FC = () => {
+  const { isAuthenticated } = useAuthStore();
+  const { isDarkMode } = useThemeStore();
+  const [currentPage, setCurrentPage] = useState<PageId>('overview');
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'overview':
+        return <OverviewPage />;
+      case 'sessions':
+        return <SessionsPage />;
+      case 'activities':
+        return <ActivitiesPage />;
+      case 'timeline':
+        return <TimelinePage />;
+      case 'screenshots':
+        return <ScreenshotsPage />;
+      case 'ai-insights':
+        return <AIInsightsPage />;
+      case 'workflow-explorer':
+        return <WorkflowExplorerPage />;
+      case 'settings':
+        return <SettingsPage />;
+      default:
+        return <OverviewPage />;
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header />
-      <div className="dashboard-container">
-        <SessionList
-          sessions={sessions}
-          activeSessionId={activeSession?.id}
-          onSelectSession={setActiveSession}
-          onNewSession={handleNewSession}
-        />
-        <LiveTelemetry sessionId={activeSession?.id} telemetryLog={telemetry} />
+    <div
+      className={`min-h-screen flex ${isDarkMode ? 'dark bg-gray-950 text-gray-100' : 'bg-gray-100 text-gray-900'}`}
+    >
+      <Sidebar currentPage={currentPage} onSelectPage={setCurrentPage} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header title={currentPage.replace('-', ' ')} />
+        <main className="p-6 flex-1 overflow-y-auto">{renderPage()}</main>
       </div>
     </div>
   );
 };
+
+export function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+    </QueryClientProvider>
+  );
+}
 
 export default App;
