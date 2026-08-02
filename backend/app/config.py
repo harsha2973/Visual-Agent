@@ -23,4 +23,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 # 24 hours
     refresh_token_expire_days: int = 7
 
+    # S3 Storage Configuration
+    s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
+    s3_access_key: str = os.getenv("S3_ACCESS_KEY", "minioadmin")
+    s3_secret_key: str = os.getenv("S3_SECRET_KEY", "minioadmin")
+    s3_bucket_name: str = os.getenv("S3_BUCKET_NAME", "visual-agent-screenshots")
+    s3_region: str = os.getenv("S3_REGION", "us-east-1")
+
 settings = Settings()

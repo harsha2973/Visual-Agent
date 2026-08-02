@@ -29,6 +29,24 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: visual_agent_minio
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -43,10 +61,17 @@ services:
       REDIS_URL: 'redis://redis:6379'
       JWT_SECRET: 'super-secret-jwt-key-visual-agent'
       AI_WORKER_URL: 'http://ai-worker:8000'
+      S3_ENDPOINT_URL: 'http://minio:9000'
+      S3_ACCESS_KEY: 'minioadmin'
+      S3_SECRET_KEY: 'minioadmin'
+      S3_BUCKET_NAME: 'visual-agent-screenshots'
+      S3_REGION: 'us-east-1'
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   ai-worker:
@@ -78,3 +103,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  minio-data:

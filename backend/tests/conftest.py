@@ -4,6 +4,12 @@ from pathlib import Path
 # Add backend directory to sys.path for clean module imports in pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Explicitly import all models to ensure registration in Base.metadata
+from app.infrastructure.models.user import UserModel  # noqa: F401
+from app.infrastructure.models.session import SessionModel  # noqa: F401
+from app.infrastructure.models.event import EventModel  # noqa: F401
+from app.infrastructure.models.screenshot import ScreenshotModel  # noqa: F401
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -18,8 +24,6 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 @pytest_asyncio.fixture(scope="session")
 async def test_engine():
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield engine
     await engine.dispose()
 
@@ -27,6 +31,9 @@ async def test_engine():
 async def db_session(test_engine):
     connection = await test_engine.connect()
     transaction = await connection.begin()
+    
+    # Create all tables explicitly on this connection
+    await connection.run_sync(Base.metadata.create_all)
     
     session_factory = async_sessionmaker(connection, class_=AsyncSession, expire_on_commit=False)
     session = session_factory()
