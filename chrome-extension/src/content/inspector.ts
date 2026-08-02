@@ -1,7 +1,24 @@
 /// <reference types="chrome"/>
 import { AXElementNode, isElementSensitive } from '@visual-agent/shared';
+import { EventManager } from '../telemetry/EventManager.js';
 
 let elementCounter = 0;
+
+// Initialize Content Script DOM EventManager for user interaction tracking
+export const contentEventManager = new EventManager({
+  batchSize: 5,
+  flushIntervalMs: 3000,
+  onFlush: async (batch) => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: 'TELEMETRY_PAYLOAD',
+        payload: { activityEvents: batch },
+      });
+    }
+  },
+});
+
+contentEventManager.initContentScriptListeners(window);
 
 function parseAXDomTree(): AXElementNode[] {
   const nodes: AXElementNode[] = [];

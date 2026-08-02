@@ -3,7 +3,17 @@
   "name": "Visual AI Browser Agent",
   "version": "1.0.0",
   "description": "Production-Ready Visual AI Agent with sidepanel control & PII masking.",
-  "permissions": ["activeTab", "storage", "scripting", "offscreen", "sidePanel", "tabs"],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "offscreen",
+    "sidePanel",
+    "tabs",
+    "idle",
+    "downloads",
+    "webNavigation"
+  ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",
