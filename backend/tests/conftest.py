@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add backend directory to sys.path for clean module imports in pytest
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
